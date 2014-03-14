@@ -39,7 +39,7 @@
         controls (js/THREE.OrbitControls. camera)
         ambient (scene/ambient-light 0x001111)
         point (scene/point-light {:color 0xffffff :position point-position})
-        field (geometry/make-sphere-field 50 50 [-10 -10] [10 10] 25 20)]
+        field (geometry/make-sphere-field 50 50 [-10 -10] [10 10] 25 5)]
     (doseq [sph field]
       (.add scene sph))
     (.add scene ambient)
