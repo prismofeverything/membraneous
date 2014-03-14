@@ -32,6 +32,8 @@
 
 (def point-position (js/THREE.Vector3. -2500 2500 1500))
 
+(def baseline 12)
+
 (defn init-scene
   [state]
   (let [scene (:scene state)
@@ -39,26 +41,28 @@
         controls (js/THREE.OrbitControls. camera)
         ambient (scene/ambient-light 0x001111)
         point (scene/point-light {:color 0xffffff :position point-position})
-        field (geometry/make-sphere-field 50 50 [-10 -10] [10 10] 25 5)]
-    (doseq [sph field]
-      (.add scene sph))
+        field (geometry/make-sphere-field 20 20 [-10 -10] [10 10] 60 baseline)]
+    (doseq [{:keys [sphere]} (vals field)]
+      (.add scene sphere))
     (.add scene ambient)
     (.add scene point)
     (assoc state
       :camera camera
       :controls controls
+      :field field
       :lights {:ambient ambient :point point})))
 
 (defn update-scene
   [state]
-  (let [{:keys [lights time controls]} state]
+  (let [{:keys [lights time controls]} state
+        field (geometry/force-cycle (:field state) baseline)]
     (.update controls)
     (.set
      (.-position (:point lights))
      (* (.-x point-position) (js/Math.cos (* time 0.2)))
      (* (.-y point-position) (js/Math.sin (* time 0.3)))
      (* (.-z point-position) (js/Math.sin (* time 0.5))))
-    state))
+    (assoc state :field field)))
 
 (def on-load
   (set!
