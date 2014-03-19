@@ -8,7 +8,7 @@
   [color joints]
   (reduce
    (fn [[obj molecule] [joint at]] 
-     (let [sphere (geometry/make-sphere at color 5)
+     (let [sphere (geometry/make-sphere at color 0.05)
            molecule (assoc molecule joint sphere)]
        (.add obj sphere)
        [obj molecule]))

@@ -27,8 +27,12 @@
 
 (def event-handlers
   {:click (fn [event data] 
-            (events/log (str "click!"))
-            (events/log event))})
+            (let [mouse (scene/interpret-mouse-position event)
+                  object (scene/pick-object mouse @scene/world)]
+              (scene/set-material-color object 0xaaaaaa)
+              (set! (.-z (.-position object)) (+ (.-z (.-position object)) 10))
+              (events/log (str "click! " (scene/interpret-mouse-position event)))
+              (events/log object)))})
 
 (def point-position (js/THREE.Vector3. -2500 2500 1500))
 
@@ -37,11 +41,11 @@
 (defn init-scene
   [state]
   (let [scene (:scene state)
-        camera (scene/camera [0 0 -200] (.-position scene))
+        camera (scene/camera [0 0 -2] (.-position scene))
         controls (js/THREE.OrbitControls. camera)
         ambient (scene/ambient-light 0x001111)
         point (scene/point-light {:color 0xffffff :position point-position})
-        field (geometry/make-sphere-field 20 20 [-10 -10] [10 10] 60 baseline)]
+        field (geometry/make-sphere-field 20 20 [-10 -10] [10 10] 0.6 baseline)]
     (doseq [{:keys [sphere]} (vals field)]
       (.add scene sphere))
     (.add scene ambient)
@@ -55,7 +59,7 @@
 (defn update-scene
   [state]
   (let [{:keys [lights time controls]} state
-        field (geometry/force-cycle (:field state) baseline)]
+        field (geometry/transient-force-cycle (:field state) baseline)]
     (.update controls)
     (.set
      (.-position (:point lights))

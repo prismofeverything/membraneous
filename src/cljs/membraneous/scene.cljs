@@ -11,6 +11,30 @@
   (let [[width height] (window-size)]
     (/ width height)))
 
+(defn normalize-n
+  [n d]
+  (- (* 2.0 (/ (float n) d)) 1.0))
+
+(defn interpret-mouse-position
+  [event]
+  (let [[w h] (window-size)
+        pos (.-evt event)
+        x (normalize-n (.-clientX pos) w)
+        y (* -1 (normalize-n (.-clientY pos) h))]
+    [x y]))
+
+(defn pick-object
+  [[x y] scene]
+  (let [projector (js/THREE.Projector.)
+        ray (.pickingRay projector (js/THREE.Vector3. x y 0) (:camera scene))
+        objects (.intersectObjects ray (.-children (:scene scene)))]
+    (if-let [object (first objects)]
+      (.-object object))))
+
+(defn set-material-color
+  [object color]
+  (.setHex (.-color (.-material object)) color))
+
 (defn camera
   [[x y z] look-at]
   (let [camera (js/THREE.PerspectiveCamera. 45 (aspect-ratio) 1 10000)]
@@ -80,3 +104,4 @@
                     (swap! world merge state)))]
     (swap! world merge state)
     (animate)))
+

@@ -14,11 +14,9 @@
   (let [base (str (.toString (js/Math.random) 16) "000000")]
     (str "#" (.slice base 2 8))))
 
-(def scale-factor 100)
-
 (defn set-sphere-at
   [sphere [x y z]]
-  (.set (.-position sphere) (* scale-factor x) (* scale-factor y) (* scale-factor z)))
+  (.set (.-position sphere) x y z))
 
 (defn make-sphere
   ([at color radius] (make-sphere at color radius (js/THREE.SphereGeometry. radius 16 16)))
@@ -103,7 +101,7 @@
   [field baseline]
   (let [field (map 
                (fn [[index orb]]
-                 [index (impose-force orb (* scale-factor baseline) index)])
+                 [index (impose-force orb baseline index)])
                field)]
     (into
      {}
@@ -111,3 +109,26 @@
       (fn [[index orb]]
         [index (balance-force orb)])
       field))))
+
+(defn transient-force-cycle
+  [field baseline]
+  (let [indexes (keys field)
+        trans-field (transient field)
+        trans-field (loop [field trans-field
+                           indexes indexes]
+                      (if (empty? indexes)
+                        field
+                        (let [index (first indexes)
+                              orb (get field index)
+                              orb (impose-force orb baseline index)]
+                          (recur (assoc! field index orb) (rest indexes)))))
+        trans-field (loop [field trans-field
+                           indexes indexes]
+                      (if (empty? indexes)
+                        field
+                        (let [index (first indexes)
+                              orb (get field index)
+                              orb (balance-force orb)]
+                          (recur (assoc! field index orb) (rest indexes)))))]
+    (persistent! trans-field)))
+
