@@ -11,18 +11,6 @@
   (let [[width height] (window-size)]
     (/ width height)))
 
-(defn normalize-n
-  [n d]
-  (- (* 2.0 (/ (float n) d)) 1.0))
-
-(defn interpret-mouse-position
-  [event]
-  (let [[w h] (window-size)
-        pos (.-evt event)
-        x (normalize-n (.-clientX pos) w)
-        y (* -1 (normalize-n (.-clientY pos) h))]
-    [x y]))
-
 (defn pick-object
   [[x y] scene]
   (let [projector (js/THREE.Projector.)
@@ -84,7 +72,7 @@
 
 (defn render
   [state]
-  (let [{:keys [time controls renderer scene camera]} state]
+  (let [{:keys [renderer scene camera]} state]
     (.render renderer scene camera)
     state))
 

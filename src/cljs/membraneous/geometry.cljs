@@ -67,7 +67,8 @@
                            x-portion (float (/ col cols))
                            at [(+ (* x-portion width) start-x (if (even? row) (* 0.5 single-width) 0))
                                (+ (* y-portion width sqrt-three-over-two) start-y)
-                               (if (= [row col] [0 0]) (* 10 z) z)]
+                               ;; (if (= [row col] [0 0]) (* 10 z) z)
+                               z]
                            sphere (make-sphere at 0xaa1133 radius geometry)]
                        [[row col] {:sphere sphere :inertia 0}]))
                    (range cols)))
@@ -75,9 +76,9 @@
         field (reduce find-neighbors field field)]
     field))
 
-(def pull-strength 0.003)
-(def return-strength 0.005)
-(def dampening-strength 0.99)
+(def pull-strength 0.0003)
+(def return-strength 0.0005)
+(def dampening-strength 0.999)
 
 (defn impose-force
   [orb baseline index]

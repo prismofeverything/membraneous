@@ -17,10 +17,11 @@
 (def ws (new js/WebSocket ws-url))
 
 (defn init-listeners
-  [{:keys [key-down key-up mouse-down mouse-move resize]}]
+  [{:keys [key-down key-up mouse-down mouse-up mouse-move resize]}]
   (.addEventListener js/document "keydown" key-down false)
   (.addEventListener js/document "keyup" key-up false)
   (.addEventListener js/document "mousedown" mouse-down false)
+  (.addEventListener js/document "mouseup" mouse-up false)
   (.addEventListener js/document "mousemove" mouse-move false)
   (.addEventListener js/window "resize" resize false))
 
