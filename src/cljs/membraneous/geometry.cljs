@@ -70,8 +70,7 @@
                                (+ (* y-portion width sqrt-three-over-two) start-y)
                                ;; (if (= [row col] [0 0]) (* 10 z) z)
                                z]
-                           sphere (make-sphere at 0xaa1133 radius geometry)]
-                       (.log js/console (str at))
+                           sphere (make-sphere at 0x666666 radius geometry)] ;; 0xaa1133
                        (set! (.-inertia sphere) 0)
                        [[row col] {:sphere sphere :inertia 0}]))
                    (range cols)))

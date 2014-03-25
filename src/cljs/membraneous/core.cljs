@@ -110,11 +110,11 @@
   [state]
   (let [scene (:scene state)
         look (js/THREE.Vector3. 0 0 0)
-        camera (scene/camera [0 -14 0] look)
+        camera (scene/camera [0 -13 0] look)
         ;; controls (js/THREE.OrbitControls. camera)
         ambient (scene/ambient-light 0x001111)
         point (scene/point-light {:color 0xffffff :position point-position})
-        field (geometry/make-sphere-field 20 20 [-10 -10] [10 10] 0.5 baseline)
+        field (geometry/make-sphere-field 24 24 [-10 -10] [10 10] 0.5 baseline)
         membrane (js/THREE.Object3D.)]
     (doseq [{:keys [sphere]} (vals field)]
       (.add membrane sphere))
@@ -125,7 +125,7 @@
       :camera camera
       ;; :controls controls
       :look look
-      :up 1.2
+      :up 1.4
       :field field
       :mouse {:down false :position [0 0]}
       :keyboard {}
