@@ -20,8 +20,9 @@
 
 (defn make-sphere
   ([at color radius] (make-sphere at color radius (js/THREE.SphereGeometry. radius 16 16)))
-  ([at color radius geometry]
-     (let [material (js/THREE.MeshPhongMaterial. (object {:color (or color 0xff1493)}))
+  ([at color radius geometry] (make-sphere at color radius geometry {}))
+  ([at color radius geometry options]
+     (let [material (js/THREE.MeshPhongMaterial. (object (merge {:color (or color 0xff1493)} options)))
            sphere (js/THREE.Mesh. geometry material)]
        (set-sphere-at sphere at)
        sphere)))
@@ -70,32 +71,45 @@
                                ;; (if (= [row col] [0 0]) (* 10 z) z)
                                z]
                            sphere (make-sphere at 0xaa1133 radius geometry)]
+                       (.log js/console (str at))
+                       (set! (.-inertia sphere) 0)
                        [[row col] {:sphere sphere :inertia 0}]))
                    (range cols)))
                 (range rows)))
         field (reduce find-neighbors field field)]
     field))
 
-(def pull-strength 0.0003)
+(def pull-strength 0.0005)
 (def return-strength 0.0005)
-(def dampening-strength 0.999)
+(def dampening-strength 0.995)
+
+;; (def pull-strength 0.001)
+;; (def return-strength 0.001)
+;; (def dampening-strength 0.995)
+
+;; (def pull-strength 0.0003)
+;; (def return-strength 0.0005)
+;; (def dampening-strength 0.99)
 
 (defn impose-force
   [orb baseline index]
   (let [sphere (get orb :sphere)
         z (.-z (.-position sphere))
-        pull (reduce 
+        pull (reduce
               (fn [pull other]
                 (+ pull (- (.-z (.-position other)) z)))
               0 (:neighbors orb))
         return (- baseline z)
-        balance (+ (* pull pull-strength) (* return return-strength))]
-    (assoc orb :balance balance :inertia (* dampening-strength (+ (:inertia orb) balance)))))
+        balance (+ (* pull pull-strength) (* return return-strength))
+        inertia (* dampening-strength (+ (.-inertia sphere) balance))]
+    (set! (.-inertia sphere) inertia)
+    orb))
 
 (defn balance-force
   [orb]
-  (let [position (.-position (:sphere orb))]
-    (.setZ position (+ (.-z position) (:inertia orb)))
+  (let [position (.-position (:sphere orb))
+        inertia (.-inertia (:sphere orb))]
+    (.setZ position (+ (.-z position) inertia))
     orb))
 
 (defn force-cycle

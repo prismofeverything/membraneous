@@ -4,15 +4,25 @@
 
 (def skeletons (atom {}))
 
+(def scale 30)
+
 (defn make-skeleton-molecule
   [color joints]
-  (reduce
-   (fn [[obj molecule] [joint at]] 
-     (let [sphere (geometry/make-sphere at color 0.05)
-           molecule (assoc molecule joint sphere)]
-       (.add obj sphere)
-       [obj molecule]))
-   [(js/THREE.Object3D.) {}] joints))
+  (let [[obj molecule]
+        (reduce
+         (fn [[obj molecule] [joint at]] 
+           (let [sphere (geometry/make-sphere 
+                         at color 0.02 (js/THREE.TetrahedronGeometry. 0.05) 
+;;                         {:transparent true :opacity 0.5}
+                         )
+                 molecule (assoc molecule joint sphere)]
+             (.add obj sphere)
+             [obj molecule]))
+         [(js/THREE.Object3D.) {}] joints)]
+    (.set (.-position obj) 15 -15 20)
+    (.set (.-scale obj) scale scale scale)
+    (.set (.-rotation obj) (* -0.5 Math/PI) 0 0)
+    [obj molecule]))
 
 (defn update-skeleton-molecule
   [molecule joints]
@@ -37,5 +47,10 @@
         (let [color (geometry/random-color)
               [obj molecule] (make-skeleton-molecule color joints)]
           (.add scene obj)
-          (swap! skeletons assoc id {:joints joints :molecule molecule :obj obj}))))))
+          (swap! skeletons assoc id 
+                 {:joints joints 
+                  :molecule molecule 
+                  :obj obj 
+                  :color color
+                  :collisions {}}))))))
 

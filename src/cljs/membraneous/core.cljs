@@ -48,15 +48,56 @@
     (if (and object (-> @scene/world :mouse :down))
       (do
         (scene/set-material-color object 0xaaaaaa)
-        (set! (.-z (.-position object)) (* (.-z (.-position object)) 1.2))))
+        (set! (.-z (.-position object)) (+ (.-z (.-position object)) 5))))
     (swap! scene/world update-in [:mouse :position] (constantly mouse))))
 
 (defn init-connection
   [data])
 
+(defn hand-ray
+  [skeleton hand]
+  (let [world (.localToWorld (:obj skeleton) (.clone (.-position hand)))
+        from (.clone world)
+        _ (.setZ from 200)
+        to (js/THREE.Vector3. 0 0 -1)
+        ray (js/THREE.Raycaster. from to)]
+    ray))
+
+(defn hand-rays
+  [{:keys [molecule] :as skeleton}]
+  (reduce 
+   (fn [rays joint]
+     (assoc rays joint (hand-ray skeleton (get molecule joint))))
+   {} [:left-hand :right-hand :head]))
+
+(defn hand-collide
+  [skeleton sphere]
+  (let [color (js/parseInt (+ "0x" (.slice (:color skeleton) 1)))]
+    (scene/set-material-color sphere color)
+    (if (> 0.01 (Math/abs (.-inertia sphere)))
+      (set! (.-inertia sphere) (+ (.-inertia sphere) 0.3))
+      (set! (.-inertia sphere) (* (.-inertia sphere) 1.02)))))
+
+(defn update-skeletons
+  [skeletons]
+  (skeleton/receive-skeletons skeletons (:scene @scene/world))
+  (doseq [[id skeleton] @skeleton/skeletons]
+    (let [rays (hand-rays skeleton)
+          collisions (reduce 
+                      (fn [collisions [joint ray]]
+                        (let [spheres (.intersectObjects ray (.-children (:membrane @scene/world)))]
+                          (if-let [sphere (first spheres)]
+                            (do
+                              (if (not= sphere (get-in skeleton [:collisions joint]))
+                                (hand-collide skeleton (.-object sphere)))
+                              (assoc collisions joint sphere))
+                            (assoc collisions joint nil))))
+                      {} rays)]
+      (swap! @skeleton/skeletons update-in [id :collisions] (constantly collisions)))))
+
 (def websocket-handlers
   {:init init-connection
-   :skeletons #(skeleton/receive-skeletons % (:scene @scene/world))})
+   :skeletons update-skeletons})
 
 (def event-handlers
   {:click (fn [event data])})
@@ -73,9 +114,11 @@
         ;; controls (js/THREE.OrbitControls. camera)
         ambient (scene/ambient-light 0x001111)
         point (scene/point-light {:color 0xffffff :position point-position})
-        field (geometry/make-sphere-field 20 20 [-10 -10] [10 10] 0.5 baseline)]
+        field (geometry/make-sphere-field 20 20 [-10 -10] [10 10] 0.5 baseline)
+        membrane (js/THREE.Object3D.)]
     (doseq [{:keys [sphere]} (vals field)]
-      (.add scene sphere))
+      (.add membrane sphere))
+    (.add scene membrane)
     (.add scene ambient)
     (.add scene point)
     (assoc state
@@ -86,6 +129,7 @@
       :field field
       :mouse {:down false :position [0 0]}
       :keyboard {}
+      :membrane membrane
       :lights {:ambient ambient :point point})))
 
 (defn update-scene
@@ -101,9 +145,9 @@
     (.lookAt camera look)
     (.set
      (.-position (:point lights))
-     (* (.-x point-position) (js/Math.cos (* time 0.2)))
-     (* (.-y point-position) (js/Math.sin (* time 0.3)))
-     (* (.-z point-position) (js/Math.sin (* time 0.5))))
+     (* (.-x point-position) (js/Math.cos (* time 2 0.1)))
+     (* (.-y point-position) (js/Math.sin (* time 3 0.1)))
+     (* (.-z point-position) (js/Math.sin (* time 5 0.1))))
     (assoc state :field field :up up)))
 
 (def on-load

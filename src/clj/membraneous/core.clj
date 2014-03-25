@@ -13,6 +13,8 @@
 (def min-at [-2000 -2500 0])
 (def range-at [4000 4000 5000])
 
+(def scale 1.0)
+
 (defn track-bounds
   [skeletons]
   (doseq [[id joints] skeletons]
@@ -33,7 +35,7 @@
   [at]
   (let [normal (mapv
                 (fn [n min range] 
-                  (/ (- n min) range))
+                  (* scale (/ (- n min) range)))
                 at min-at range-at)]
     (update-in normal [0] -)))
 
@@ -63,7 +65,7 @@
      (try 
        (let [skeletons @bifocals/skeletons
              normal (normalize-skeletons skeletons)]
-         ;; (track-bounds skeletons)
+         (track-bounds skeletons)
          (handler normal))
        (catch Exception e (.printStackTrace e))))
    pool))
