@@ -110,7 +110,7 @@
   [state]
   (let [scene (:scene state)
         look (js/THREE.Vector3. 0 0 0)
-        camera (scene/camera [0 -13 0] look)
+        camera (scene/camera [0 -14 0] look)
         ;; controls (js/THREE.OrbitControls. camera)
         ambient (scene/ambient-light 0x001111)
         point (scene/point-light {:color 0xffffff :position point-position})
@@ -143,6 +143,9 @@
     ;; (.update controls)
     (.set look 0 look-y look-z)
     (.lookAt camera look)
+    (doseq [[id skeleton] @skeleton/skeletons]
+      (doseq [[joint sphere] (:molecule skeleton)]
+        (set! (.-y (.-rotation sphere)) (+ 0.02 (.-y (.-rotation sphere))))))
     (.set
      (.-position (:point lights))
      (* (.-x point-position) (js/Math.cos (* time 2 0.1)))

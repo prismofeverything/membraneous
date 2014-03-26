@@ -13,7 +13,8 @@
 (def min-at [-2000 -2500 0])
 (def range-at [4000 4000 5000])
 
-(def scale 1.0)
+(def history (atom {}))
+(def history-length 5)
 
 (defn track-bounds
   [skeletons]
@@ -35,7 +36,7 @@
   [at]
   (let [normal (mapv
                 (fn [n min range] 
-                  (* scale (/ (- n min) range)))
+                  (/ (- n min) range))
                 at min-at range-at)]
     (update-in normal [0] -)))
 
@@ -55,6 +56,42 @@
 (defn wake-skeletons
   []
   (bifocals/tick))
+
+(defn track-history
+  [history skeletons limit]
+  (reduce
+   (fn [history [id skeleton]]
+     (update-in history [id] #(take limit (conj % skeleton))))
+   history skeletons))
+
+(defn at-plus
+  [a b]
+  (if a
+    (map + a b)
+    b))
+
+(defn scale-at
+  [at scale]
+  (map #(/ % scale) at))
+
+(defn smooth-skeletons
+  [full-history scope]
+  (reduce
+   (fn [skeletons [id history]]
+     (let [skeleton
+           (reduce
+            (fn [smooth previous]
+              (reduce 
+               (fn [smooth [joint at]]
+                 (update-in smooth [joint] #(map + % at)))
+               smooth previous))
+            {} (take scope history))]
+       (assoc skeletons 
+         id (reduce
+             (fn [skeleton [joint at]]
+               (assoc skeleton joint (scale-at at scope)))
+             {} skeleton))))
+   {} full-history))
 
 (defn provide-skeletons
   [handler milli]
