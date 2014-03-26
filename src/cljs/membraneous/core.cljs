@@ -70,32 +70,33 @@
   (reduce 
    (fn [rays joint]
      (assoc rays joint (hand-ray skeleton (get molecule joint))))
-   {} [:left-hand :right-hand :head]))
+   {} [:left-hand :right-hand :head :right-shoulder :left-shoulder :right-elbow :left-elbow]))
 
 (defn hand-collide
   [skeleton sphere]
   (let [color (js/parseInt (+ "0x" (.slice (:color skeleton) 1)))]
     (scene/set-material-color sphere color)
     (if (> 0.01 (Math/abs (.-inertia sphere)))
-      (set! (.-inertia sphere) (+ (.-inertia sphere) 0.3))
-      (set! (.-inertia sphere) (* (.-inertia sphere) 1.02)))))
+      (set! (.-inertia sphere) (+ (.-inertia sphere) -0.2))
+      (set! (.-inertia sphere) (* (.-inertia sphere) 1.03)))))
 
 (defn update-skeletons
   [skeletons]
   (skeleton/receive-skeletons skeletons (:scene @scene/world))
-  (doseq [[id skeleton] @skeleton/skeletons]
+  (doseq [[id skeleton] (deref skeleton/skeletons)]
     (let [rays (hand-rays skeleton)
           collisions (reduce 
                       (fn [collisions [joint ray]]
                         (let [spheres (.intersectObjects ray (.-children (:membrane @scene/world)))]
                           (if-let [sphere (first spheres)]
                             (do
-                              (if (not= sphere (get-in skeleton [:collisions joint]))
+                              (if-not (= (.-object sphere) (get-in skeleton [:collisions joint]))
+                                
                                 (hand-collide skeleton (.-object sphere)))
-                              (assoc collisions joint sphere))
+                              (assoc collisions joint (.-object sphere)))
                             (assoc collisions joint nil))))
                       {} rays)]
-      (swap! @skeleton/skeletons update-in [id :collisions] (constantly collisions)))))
+      (swap! skeleton/skeletons update-in [id :collisions] (constantly collisions)))))
 
 (def websocket-handlers
   {:init init-connection
@@ -116,7 +117,7 @@
         ;; controls (js/THREE.OrbitControls. camera)
         ambient (scene/ambient-light 0x001111)
         point (scene/point-light {:color 0xffffff :position point-position})
-        field (geometry/make-sphere-field 24 24 [-10 -10] [10 10] 0.5 baseline)
+        field (geometry/make-sphere-field 20 20 [-10 -10] [10 10] 0.5 baseline)
         membrane (js/THREE.Object3D.)]
     (doseq [{:keys [sphere]} (vals field)]
       (.add membrane sphere))

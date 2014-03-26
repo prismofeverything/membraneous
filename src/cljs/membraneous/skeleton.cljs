@@ -52,5 +52,5 @@
                   :molecule molecule 
                   :obj obj 
                   :color color
-                  :collisions {}}))))))
+                  :collisions {:yoyo 111}}))))))
 
