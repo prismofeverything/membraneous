@@ -9,7 +9,24 @@
   {:rows 20
    :columns 20
    :baseline 7
+   :membrane-start [-10 -10]
+   :membrane-end [10 10]
    :camera-position [0 -14 3]
+   :up 0.9
+   :sphere-radius 0.5
+   :hand-strike -0.16
+   :hand-amplify 1.08
+   :inertia-threshhold 0.01
+   :skeleton-anchor [15 -15 25]
+   :joint-geometry (js/THREE.TetrahedronGeometry. 0.05)})
+
+(def tall-parameters
+  {:rows 40
+   :columns 10
+   :baseline 7
+   :membrane-start [-5 -5]
+   :membrane-end [5 5]
+   :camera-position [0 -20 3]
    :up 0.9
    :sphere-radius 0.5
    :hand-strike -0.16
@@ -138,7 +155,8 @@
         field (geometry/make-sphere-field 
                (:rows parameters) 
                (:columns parameters) 
-               [-10 -10] [10 10] 
+               (:membrane-start parameters)
+               (:membrane-end parameters)
                (:sphere-radius parameters) 
                (:baseline parameters))
         membrane (js/THREE.Object3D.)]
