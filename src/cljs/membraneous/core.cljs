@@ -5,6 +5,19 @@
             [membraneous.events :as events]
             [membraneous.connect :as connect]))
 
+(def membrane-parameters
+  {:rows 20
+   :columns 20
+   :baseline 7
+   :camera-position [0 -14 3]
+   :up 0.9
+   :sphere-radius 0.5
+   :hand-strike -0.16
+   :hand-amplify 1.08
+   :inertia-threshhold 0.01
+   :skeleton-anchor [15 -15 25]
+   :joint-geometry (js/THREE.TetrahedronGeometry. 0.05)})
+
 (defn on-key-down 
   [event]
   (swap! scene/world assoc-in [:keyboard (.-keyCode event)] true))
@@ -73,30 +86,36 @@
    {} [:left-hand :right-hand :head :right-shoulder :left-shoulder :right-elbow :left-elbow]))
 
 (defn hand-collide
-  [skeleton sphere]
+  [skeleton sphere threshhold strike amplify]
   (let [color (js/parseInt (+ "0x" (.slice (:color skeleton) 1)))]
     (scene/set-material-color sphere color)
-    (if (> 0.01 (Math/abs (.-inertia sphere)))
-      (set! (.-inertia sphere) (+ (.-inertia sphere) -0.2))
-      (set! (.-inertia sphere) (* (.-inertia sphere) 1.03)))))
+    (if (> threshhold (Math/abs (.-inertia sphere)))
+      (set! (.-inertia sphere) (+ (.-inertia sphere) strike))
+      (set! (.-inertia sphere) (* (.-inertia sphere) amplify)))))
 
 (defn update-skeletons
   [skeletons]
-  (skeleton/receive-skeletons skeletons (:scene @scene/world))
-  (doseq [[id skeleton] (deref skeleton/skeletons)]
-    (let [rays (hand-rays skeleton)
-          collisions (reduce 
-                      (fn [collisions [joint ray]]
-                        (let [spheres (.intersectObjects ray (.-children (:membrane @scene/world)))]
-                          (if-let [sphere (first spheres)]
-                            (do
-                              (if-not (= (.-object sphere) (get-in skeleton [:collisions joint]))
-                                
-                                (hand-collide skeleton (.-object sphere)))
-                              (assoc collisions joint (.-object sphere)))
-                            (assoc collisions joint nil))))
-                      {} rays)]
-      (swap! skeleton/skeletons update-in [id :collisions] (constantly collisions)))))
+  (let [world @scene/world
+        parameters (:parameters world)
+        threshhold (:inertia-threshhold parameters)
+        strike (:hand-strike parameters)
+        amplify (:hand-amplify parameters)
+        anchor (:skeleton-anchor parameters)
+        geometry (:joint-geometry parameters)]
+    (skeleton/receive-skeletons skeletons (:scene world) anchor geometry)
+    (doseq [[id skeleton] (deref skeleton/skeletons)]
+      (let [rays (hand-rays skeleton)
+            collisions (reduce 
+                        (fn [collisions [joint ray]]
+                          (let [spheres (.intersectObjects ray (.-children (:membrane @scene/world)))]
+                            (if-let [sphere (first spheres)]
+                              (do
+                                (if-not (= (.-object sphere) (get-in skeleton [:collisions joint]))
+                                  (hand-collide skeleton (.-object sphere) threshhold strike amplify))
+                                (assoc collisions joint (.-object sphere)))
+                              (assoc collisions joint nil))))
+                        {} rays)]
+        (swap! skeleton/skeletons update-in [id :collisions] (constantly collisions))))))
 
 (def websocket-handlers
   {:init init-connection
@@ -107,17 +126,21 @@
 
 (def point-position (js/THREE.Vector3. -2500 2500 1500))
 
-(def baseline 7)
-
 (defn init-scene
   [state]
   (let [scene (:scene state)
+        parameters membrane-parameters
         look (js/THREE.Vector3. 0 0 0)
-        camera (scene/camera [0 -14 3] look)
+        camera (scene/camera (:camera-position parameters) look)
         ;; controls (js/THREE.OrbitControls. camera)
         ambient (scene/ambient-light 0x001111)
         point (scene/point-light {:color 0xffffff :position point-position})
-        field (geometry/make-sphere-field 20 20 [-10 -10] [10 10] 0.5 baseline)
+        field (geometry/make-sphere-field 
+               (:rows parameters) 
+               (:columns parameters) 
+               [-10 -10] [10 10] 
+               (:sphere-radius parameters) 
+               (:baseline parameters))
         membrane (js/THREE.Object3D.)]
     (doseq [{:keys [sphere]} (vals field)]
       (.add membrane sphere))
@@ -128,17 +151,18 @@
       :camera camera
       ;; :controls controls
       :look look
-      :up 0.9
+      :up (:up parameters)
       :field field
       :mouse {:down false :position [0 0]}
       :keyboard {}
       :membrane membrane
+      :parameters parameters
       :lights {:ambient ambient :point point})))
 
 (defn update-scene
   [state]
-  (let [{:keys [lights camera time keyboard look controls up]} state
-        field (geometry/transient-force-cycle (:field state) baseline)
+  (let [{:keys [lights camera time keyboard look controls up parameters]} state
+        field (geometry/transient-force-cycle (:field state) (:baseline parameters))
         up (if (get keyboard 38) (+ up 0.01) up)
         up (if (get keyboard 40) (- up 0.01) up)
         look-y (* 50 (Math/sin up))
