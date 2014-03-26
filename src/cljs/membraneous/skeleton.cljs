@@ -19,7 +19,7 @@
              (.add obj sphere)
              [obj molecule]))
          [(js/THREE.Object3D.) {}] joints)]
-    (.set (.-position obj) 15 -20 20)
+    (.set (.-position obj) 15 -15 25)
     (.set (.-scale obj) scale scale scale)
     (.set (.-rotation obj) (* -0.5 Math/PI) 0 0)
     [obj molecule]))

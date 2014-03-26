@@ -83,13 +83,13 @@
             (fn [smooth previous]
               (reduce 
                (fn [smooth [joint at]]
-                 (update-in smooth [joint] #(map + % at)))
+                 (update-in smooth [joint] #(at-plus % at)))
                smooth previous))
             {} (take scope history))]
        (assoc skeletons 
          id (reduce
              (fn [skeleton [joint at]]
-               (assoc skeleton joint (scale-at at scope)))
+               (assoc skeleton joint (scale-at at (min scope (count history)))))
              {} skeleton))))
    {} full-history))
 
@@ -102,8 +102,10 @@
      (try 
        (let [skeletons @bifocals/skeletons
              normal (normalize-skeletons skeletons)]
+         (swap! history track-history normal history-length)
          (track-bounds skeletons)
-         (handler normal))
+         ;; (handler normal)
+         (handler (smooth-skeletons @history history-length)))
        (catch Exception e (.printStackTrace e))))
    pool))
 

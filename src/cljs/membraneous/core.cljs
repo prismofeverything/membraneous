@@ -15,10 +15,12 @@
 
 (defn on-mouse-down 
   [event]
+  (.log js/console "???")
   (swap! scene/world update-in [:mouse :down] (constantly true)))
 
 (defn on-mouse-up
   [event]
+  (.log js/console "???")
   (swap! scene/world update-in [:mouse :down] (constantly false)))
 
 (defn on-resize
@@ -104,13 +106,13 @@
 
 (def point-position (js/THREE.Vector3. -2500 2500 1500))
 
-(def baseline 5)
+(def baseline 7)
 
 (defn init-scene
   [state]
   (let [scene (:scene state)
         look (js/THREE.Vector3. 0 0 0)
-        camera (scene/camera [0 -14 0] look)
+        camera (scene/camera [0 -14 3] look)
         ;; controls (js/THREE.OrbitControls. camera)
         ambient (scene/ambient-light 0x001111)
         point (scene/point-light {:color 0xffffff :position point-position})
@@ -125,7 +127,7 @@
       :camera camera
       ;; :controls controls
       :look look
-      :up 1.4
+      :up 0.9
       :field field
       :mouse {:down false :position [0 0]}
       :keyboard {}
