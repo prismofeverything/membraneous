@@ -101,11 +101,12 @@
      (bifocals/tick)
      (try 
        (let [skeletons @bifocals/skeletons
+             present (keys skeletons)
              normal (normalize-skeletons skeletons)]
          (swap! history track-history normal history-length)
          (track-bounds skeletons)
          ;; (handler normal)
-         (handler (smooth-skeletons @history history-length)))
+         (handler (smooth-skeletons (select-keys @history present) history-length)))
        (catch Exception e (.printStackTrace e))))
    pool))
 
