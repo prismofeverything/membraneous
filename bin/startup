@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+cd ~/Project/membraneous
+nohup lein run &
+sleep 30
+open ~/Desktop/Kiosk
