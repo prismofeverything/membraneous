@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
+~/Project/membraneous/bin/kiosk &
 cd ~/Project/membraneous
-nohup lein run &
-sleep 30
-open ~/Desktop/Kiosk
+nohup lein trampoline run
